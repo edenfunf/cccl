@@ -757,7 +757,7 @@ TEST_CASE("Device radix sort pairs DB decomposer uses custom stream", "[radix_so
   REQUIRE(h_values[2] == 0);
 }
 
-// using different block sizes yields to different temporary storage sizes, so use a custom policy to influence that
+// using different block sizes yields different temporary storage sizes, so use a custom policy to influence that
 template <typename KeyT, typename ValueT, int BlockThreads>
 struct tiny_onesweep_policy_selector
 {
