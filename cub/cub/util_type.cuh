@@ -712,10 +712,15 @@ struct KeyValuePair
       , value(value)
   {}
 
-  /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend bool operator==(const KeyValuePair& a, const KeyValuePair& b)
   {
-    return (value != b.value) || (key != b.key);
+    return (a.value == b.value) && (a.key == b.key);
+  }
+
+  /// Inequality operator
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend bool operator!=(const KeyValuePair& a, const KeyValuePair& b)
+  {
+    return !(*a == b);
   }
 };
 
