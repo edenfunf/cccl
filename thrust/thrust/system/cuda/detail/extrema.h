@@ -362,44 +362,73 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
   T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
   return first + ::cuda::std::get<1>(result);
 }
+
+template <class Derived, class ItemsIt, class BinaryPred>
+ItemsIt CUB_RUNTIME_FUNCTION
+cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+{
+  cudaStream_t stream      = cuda_cub::stream(policy);
+  using offset_t           = thrust::detail::it_difference_t<ItemsIt>;
+  const offset_t num_items = ::cuda::std::distance(first, last);
+
+  size_t tmp_size = 0;
+  auto error      = cub::DeviceReduce::ArgMin(
+    nullptr,
+    tmp_size,
+    first,
+    ::cuda::discard_iterator{},
+    static_cast<offset_t*>(nullptr),
+    num_items,
+    binary_pred,
+    stream);
+  throw_on_error(error, "min_element failed to allocate temporary storages");
+
+  // We allocate both the temporary storage needed for the algorithm, and a `size_type` to store the result.
+  thrust::detail::temporary_array<char, Derived> tmp(policy, sizeof(offset_t) + tmp_size);
+  offset_t* index_ptr = thrust::detail::aligned_reinterpret_cast<offset_t*>(tmp.data().get());
+  void* tmp_ptr       = static_cast<void*>(tmp.data().get() + sizeof(offset_t));
+
+  error = cub::DeviceReduce::ArgMin(
+    tmp_ptr, tmp_size, first, ::cuda::discard_iterator{}, index_ptr, num_items, binary_pred, stream);
+  cuda_cub::throw_on_error(error, "min_element failed to launch cub::DeviceReduce::ArgMin");
+
+  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "min_element failed to synchronize");
+
+  return first + get_value(policy, index_ptr);
+}
+
+template <typename Predicate>
+struct swap_args : Predicate
+{
+  template <typename T, typename U>
+  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
+  {
+    return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
+  }
+};
 } // namespace __extrema
 
 /// min element
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class ItemsIt, class BinaryPred>
+template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
 ItemsIt _CCCL_HOST_DEVICE
-min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  THRUST_CDP_DISPATCH((last = __extrema::element<__extrema::arg_min_f>(policy, first, last, binary_pred);),
-                      (last = thrust::min_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
-  return last;
-}
-
-template <class Derived, class ItemsIt>
-ItemsIt _CCCL_HOST_DEVICE min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
-{
-  using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::min_element(policy, first, last, ::cuda::std::less<value_type>());
+  THRUST_CDP_DISPATCH(({ return __extrema::cub_min_element(policy, first, last, binary_pred); }),
+                      ({ return thrust::min_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred); }));
 }
 
 /// max element
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class ItemsIt, class BinaryPred>
+template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<thrust::detail::it_value_t<ItemsIt>>>
 ItemsIt _CCCL_HOST_DEVICE
-max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
+max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  THRUST_CDP_DISPATCH((last = __extrema::element<__extrema::arg_max_f>(policy, first, last, binary_pred);),
-                      (last = thrust::max_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
-  return last;
-}
-
-template <class Derived, class ItemsIt>
-ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
-{
-  using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::max_element(policy, first, last, ::cuda::std::less<value_type>());
+  THRUST_CDP_DISPATCH(
+    ({ return __extrema::cub_min_element(policy, first, last, __extrema::swap_args<BinaryPred>{binary_pred}); }),
+    ({ return thrust::max_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred); }));
 }
 
 /// minmax element
