@@ -335,34 +335,6 @@ extrema(execution_policy<Derived>& policy, InputIt first, Size num_items, Binary
   return result;
 }
 
-template <template <class, class, class> class ArgFunctor, class Derived, class ItemsIt, class BinaryPred>
-ItemsIt THRUST_RUNTIME_FUNCTION
-element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
-{
-  if (first == last)
-  {
-    return last;
-  }
-
-  using InputType = thrust::detail::it_value_t<ItemsIt>;
-  using IndexType = thrust::detail::it_difference_t<ItemsIt>;
-
-  IndexType num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
-
-  using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
-  using zip_iterator   = thrust::zip_iterator<iterator_tuple>;
-
-  iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
-
-  using arg_min_t = ArgFunctor<InputType, IndexType, BinaryPred>;
-  using T         = ::cuda::std::tuple<InputType, IndexType>;
-
-  zip_iterator begin = thrust::make_zip_iterator(iter_tuple);
-
-  T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
-  return first + ::cuda::std::get<1>(result);
-}
-
 template <class Derived, class ItemsIt, class BinaryPred>
 ItemsIt CUB_RUNTIME_FUNCTION
 cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
@@ -370,6 +342,11 @@ cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, 
   cudaStream_t stream      = cuda_cub::stream(policy);
   using offset_t           = thrust::detail::it_difference_t<ItemsIt>;
   const offset_t num_items = ::cuda::std::distance(first, last);
+
+  if (num_items == 0)
+  {
+    return last;
+  }
 
   size_t tmp_size = 0;
   auto error      = cub::DeviceReduce::ArgMin(
