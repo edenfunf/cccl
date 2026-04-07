@@ -227,10 +227,10 @@ struct AgentPlan
       , grid_size(grid_size_)
   {}
 
-  THRUST_RUNTIME_FUNCTION AgentPlan(AgentPlan const&)                = default;
-  THRUST_RUNTIME_FUNCTION AgentPlan& operator=(AgentPlan const&)     = default;
-  THRUST_RUNTIME_FUNCTION AgentPlan(AgentPlan&&) noexcept            = default;
-  THRUST_RUNTIME_FUNCTION AgentPlan& operator=(AgentPlan&&) noexcept = default;
+  constexpr AgentPlan(AgentPlan const&)                = default;
+  constexpr AgentPlan& operator=(AgentPlan const&)     = default;
+  constexpr AgentPlan(AgentPlan&&) noexcept            = default;
+  constexpr AgentPlan& operator=(AgentPlan&&) noexcept = default;
 
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
