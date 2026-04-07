@@ -43,6 +43,7 @@
 #  include <cuda/std/__type_traits/conjunction.h>
 #  include <cuda/std/__type_traits/is_complete_type.h>
 #  include <cuda/std/__type_traits/is_swappable.h>
+#  include <cuda/std/__type_traits/remove_reference.h>
 #endif
 
 #include <cuda/std/__cccl/prologue.h>
