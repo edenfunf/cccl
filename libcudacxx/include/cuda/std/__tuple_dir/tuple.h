@@ -279,7 +279,7 @@ public:
     return *this;
   }
 
-  _CCCL_API void swap(tuple& __t) noexcept(noexcept(__base_.swap(__t.__base_)))
+  _CCCL_API void swap(tuple& __t) noexcept((is_nothrow_swappable_v<_Tp> && ...))
   {
     __base_.swap(__t.__base_);
   }
