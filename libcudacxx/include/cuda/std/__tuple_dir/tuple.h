@@ -41,7 +41,7 @@
 
 #if _CCCL_CUDA_COMPILER(NVCC, <=, 12, 1)
 #  include <cuda/std/__type_traits/conjunction.h>
-#  include <cuda/std/__type_traits/is_complete_type.h>
+#  include <cuda/std/__type_traits/is_complete.h>
 #  include <cuda/std/__type_traits/is_swappable.h>
 #  include <cuda/std/__type_traits/remove_reference.h>
 #endif
@@ -295,7 +295,7 @@ public:
   // rather, any is_swappable trait) as they require the types to be complete. In this case we
   // need to lazily instantiate these templates so we can short-circuit if _Tp is incomplete.
 #if _CCCL_CUDA_COMPILER(NVCC, <=, 12, 1)
-    noexcept(conjunction_v<__is_complete_type<remove_reference_t<_Tp>>..., is_nothrow_swappable<_Tp>...>)
+    noexcept(conjunction_v<__is_complete<remove_reference_t<_Tp>>..., is_nothrow_swappable<_Tp>...>)
 #else
     noexcept(noexcept(__base_.swap(__t.__base_)))
 #endif
