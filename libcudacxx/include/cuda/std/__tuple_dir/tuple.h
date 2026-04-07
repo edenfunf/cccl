@@ -281,7 +281,7 @@ public:
 
   _CCCL_TEMPLATE(class _Constraints = __tuple_constraints<_Tp...>)
   _CCCL_REQUIRES(_Constraints::__swappable)
-  _CCCL_API void swap(tuple& __t) noexcept(_Constraints::__is_nothrow_swappable)
+  _CCCL_API void swap(tuple& __t) noexcept(_Constraints::__nothrow_swappable)
   {
     __base_.swap(__t.__base_);
   }
