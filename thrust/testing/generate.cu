@@ -14,8 +14,8 @@ struct return_value
 {
   T val;
 
-  return_value() {}
-  return_value(T v)
+  _CCCL_HOST_DEVICE return_value() {};
+  _CCCL_HOST_DEVICE return_value(T v)
       : val(::cuda::std::move(v))
   {}
 
