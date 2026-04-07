@@ -373,16 +373,6 @@ cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, 
 
   return first + get_value(policy, index_ptr);
 }
-
-template <typename Predicate>
-struct swap_args : Predicate
-{
-  template <typename T, typename U>
-  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
-  {
-    return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
-  }
-};
 } // namespace __extrema
 
 /// min element
@@ -404,7 +394,7 @@ ItemsIt _CCCL_HOST_DEVICE
 max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
   THRUST_CDP_DISPATCH(
-    ({ return __extrema::cub_min_element(policy, first, last, __extrema::swap_args<BinaryPred>{binary_pred}); }),
+    ({ return __extrema::cub_min_element(policy, first, last, cub::detail::swap_args{binary_pred}); }),
     ({ return thrust::max_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred); }));
 }
 
