@@ -42,7 +42,6 @@
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/lazy.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -278,9 +277,6 @@ struct __tuple_constraints
     static constexpr bool __less_than_comparable         = (__is_cpp17_less_than_comparable_v<_Tp, _Up> && ...);
     static constexpr bool __nothrow_less_than_comparable = (__is_cpp17_nothrow_less_than_comparable_v<_Tp, _Up> && ...);
   };
-
-  static constexpr bool __swappable         = (is_swappable_v<_Tp> && ...);
-  static constexpr bool __nothrow_swappable = (is_nothrow_swappable_v<_Tp> && ...);
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
