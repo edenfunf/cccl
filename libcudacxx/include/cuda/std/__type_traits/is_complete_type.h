@@ -21,20 +21,30 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/void_t.h>
+#if !_CCCL_HAS_BUILTIN(__is_complete_type)
+#  include <cuda/std/__type_traits/void_t.h>
+#endif
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if _CCCL_HAS_BUILTIN(__is_complete_type)
+template <typename T>
+struct __is_complete : bool_constant<__is_complete_type(T)>
+{};
+#else
 template <typename T, typename = void>
-struct __is_complete_type : false_type{};
+struct __is_complete : false_type
+{};
 
 template <typename T>
-struct __is_complete_type<T, void_t<decltype(sizeof(T))>> : true_type{};
+struct __is_complete<T, void_t<decltype(sizeof(T))>> : true_type
+{};
+#endif
 
 template <typename T>
-inline constexpr bool __is_complete_type_v = __is_complete_type<T>::value;
+inline constexpr bool __is_complete_v = __is_complete<T>::value;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
