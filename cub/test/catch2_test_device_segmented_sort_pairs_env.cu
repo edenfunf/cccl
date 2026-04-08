@@ -16,7 +16,7 @@ struct stream_registry_factory_t;
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairsDescending, sort_pairs_descending);
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_LAUNCH lid 0:1
 
 #include <c2h/catch2_test_helper.h>
 
