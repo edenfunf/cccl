@@ -46,6 +46,12 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
+#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
+#  define _CCCL_BROKEN_SIZEOF_INCOMPLETE_TYPE
+#  include <cuda/std/__type_traits/conjunction.h>
+#  include <cuda/std/__type_traits/is_complete.h>
+#endif
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -440,11 +446,28 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
   // Using a fold exppression here breaks nvrtc
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
+  _CCCL_API inline void swap(__tuple_impl& __t)
+  // NVCC 12.0.X has a bug where it instantiates friend functions eagerly. This leads to errors
+  // because the friend swap() in tuple causes this swap() to (transitively) be instantiated
+  // regardless of whether it is called or not.
+  //
+  // When using tuples of incomplete types this causes errors with is_nothrow_swappable (or
+  // rather, any is_swappable trait) as they require the types to be complete. In this case we
+  // need to lazily instantiate these templates so we can short-circuit if _Tp is incomplete.
+  //
+  // This is also why we must use conjunction. __fold_and_v is eager, while conjunction is
+  // lazy.
+#ifdef _CCCL_BROKEN_SIZEOF_INCOMPLETE_TYPE
+    noexcept(conjunction_v<__is_complete<remove_cvref_t<_Tp>>..., is_nothrow_swappable<_Tp>...>)
+#else
+    noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
+#endif
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
   }
 };
+
+#undef _CCCL_BROKEN_SIZEOF_INCOMPLETE_TYPE
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

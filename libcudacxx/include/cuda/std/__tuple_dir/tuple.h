@@ -39,13 +39,6 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
 
-#if _CCCL_CUDA_COMPILER(NVCC, <=, 12, 1)
-#  include <cuda/std/__type_traits/conjunction.h>
-#  include <cuda/std/__type_traits/is_complete.h>
-#  include <cuda/std/__type_traits/is_swappable.h>
-#  include <cuda/std/__type_traits/remove_reference.h>
-#endif
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -286,19 +279,7 @@ public:
     return *this;
   }
 
-  _CCCL_API void swap(tuple& __t)
-  // NVCC 12.0.X has a bug where it instantiates friend functions eagerly. This leads to errors
-  // because the friend swap() causes this swap() to be instantiated regardless of whether it
-  // is called.
-  //
-  // When using tuples with incomplete types this causes errors with is_nothrow_swappable (or
-  // rather, any is_swappable trait) as they require the types to be complete. In this case we
-  // need to lazily instantiate these templates so we can short-circuit if _Tp is incomplete.
-#if _CCCL_CUDA_COMPILER(NVCC, <=, 12, 1)
-    noexcept(conjunction_v<__is_complete<remove_reference_t<_Tp>>..., is_nothrow_swappable<_Tp>...>)
-#else
-    noexcept(noexcept(__base_.swap(__t.__base_)))
-#endif
+  _CCCL_API void swap(tuple& __t) noexcept(noexcept(__base_.swap(__t.__base_)))
   {
     __base_.swap(__t.__base_);
   }
