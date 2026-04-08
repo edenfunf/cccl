@@ -21,7 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#if !_CCCL_HAS_BUILTIN(__is_complete_type)
+
+#ifndef _CCCL_BUILTIN_IS_COMPLETE_TYPE
 #  include <cuda/std/__type_traits/void_t.h>
 #endif
 
@@ -29,17 +30,23 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if _CCCL_HAS_BUILTIN(__is_complete_type)
+#ifdef _CCCL_BUILTIN_IS_COMPLETE_TYPE
 template <typename T>
-struct __is_complete : bool_constant<__is_complete_type(T)>
+struct __is_complete : bool_constant<_CCCL_BUILTIN_IS_COMPLETE_TYPE(T)>
 {};
 #else
+// Must be a SFINAE trait instead of
+//
+// template <typename T>
+// struct is_complete : bool_constant<(sizeof(T) > 0)> {};
+//
+// Because older NVCC doesn't even allow you to utter the phrase sizeof(T) if T is incomplete
 template <typename T, typename = void>
 struct __is_complete : false_type
 {};
 
 template <typename T>
-struct __is_complete<T, void_t<decltype(sizeof(T))>> : true_type
+struct __is_complete<T, void_t<decltype(sizeof(T))>> : bool_constant<(sizeof(T) > 0)>
 {};
 #endif
 
@@ -47,6 +54,8 @@ template <typename T>
 inline constexpr bool __is_complete_v = __is_complete<T>::value;
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#undef _CCCL_BUILTIN_IS_COMPLETE_TYPE
 
 #include <cuda/std/__cccl/epilogue.h>
 
